@@ -1,0 +1,32 @@
+# ---- Python cache ----
+__pycache__/
+*.pyc
+*.pyo
+
+# ---- Virtual env ----
+venv/
+.venv/
+
+# ---- Storage / runtime ----
+backend/storage/
+backend/results/
+backend/temp/
+backend/storage/**
+
+# ---- Models / weights ----
+models/
+*.bin
+*.onnx
+*.pt
+*.pth
+*.ckpt
+
+# ---- Media files ----
+*.mp4
+*.webm
+*.wav
+*.mp3
+*.m4a
+
+# ---- OS ----
+.DS_Store

@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Analysis Result</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    /* --- Page Specific Styles --- */
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --primary: #7c5cff;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-light: rgba(255, 255, 255, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding-top: 80px; /* Increased slightly to give header space */
+      padding-bottom: 50px;
+    }
+
+    /* Force remove any blue lines/borders coming from global CSS on H2 */
+    h1::after, h2::after, h3::after { display: none !important; content: none !important; }
+
+    /* Header */
+    header {
+      position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+      background: rgba(15, 23, 42, 0.90); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-light);
+      z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+    }
+    
+    /* Header Right Side Group */
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 15px; /* Space between Download button and Back button */
+    }
+
+    /* Animated Logo */
+    @keyframes logo-shimmer {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .header-logo {
+      font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; text-decoration: none;
+      background: linear-gradient(to right, #7c5cff 20%, #38bdf8 50%, #7c5cff 80%);
+      background-size: 200% auto; -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+      animation: logo-shimmer 3s linear infinite;
+    }
+    
+    .header-back {
+      font-size: 0.85rem; font-weight: 600; color: var(--text-muted);
+      text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-light);
+      border-radius: 8px; transition: all 0.2s ease; display: flex; align-items: center; gap: 5px;
+      height: 36px; /* Fixed height for alignment */
+    }
+    .header-back:hover {
+      background: rgba(255, 255, 255, 0.05); color: var(--text-main); border-color: var(--text-muted);
+    }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 15px; }
+
+    .card {
+      background: var(--card-bg); border: 1px solid var(--border-light);
+      border-radius: 12px; padding: 25px; margin-bottom: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    .card h1 { margin: 0; font-size: 1.5rem; color: var(--text-main); }
+    
+    .card h2 { margin-top: 0; color: var(--text-main); font-size: 1.3rem; border: none; padding-bottom: 0; margin-bottom: 15px; }
+    
+    .card h3 { color: var(--text-main); font-size: 1.1rem; margin-top: 25px; margin-bottom: 10px; }
+    
+    .warn { color: #ef4444; font-size: 0.9rem; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 15px;}
+
+    /* Download Button - Moved to Header */
+    .btn-download {
+      background-image: linear-gradient(to right, #DA22FF 0%, #9733EE 51%, #DA22FF 100%);
+      margin: 0; padding: 8px 16px; /* Slightly smaller padding for header */
+      text-transform: uppercase; transition: 0.5s; background-size: 200% auto;
+      color: white; border-radius: 8px; border: none;
+      font-weight: bold; font-size: 11px; cursor: pointer;
+      box-shadow: 0 4px 15px rgba(126, 52, 161, 0.5);
+      height: 36px; /* Match height with back button */
+      display: flex; align-items: center;
+    }
+    .btn-download:hover { background-position: right center; transform: translateY(-2px); }
+
+    /* Copy Badge */
+    pre {
+      position: relative; padding: 34px 15px 15px 15px; background: rgba(0,0,0,0.3);
+      border-radius: 8px; border: 1px solid var(--border-light); overflow-x: auto;
+      white-space: pre-wrap; color: #e2e8f0; font-family: 'Courier New', monospace; font-size: 0.9rem;
+    }
+    .copy-badge {
+      position: absolute; top: 0; right: 0; background: rgba(255, 255, 255, 0.1);
+      border-bottom-left-radius: 8px; border-top-right-radius: 8px;
+      padding: 6px 12px; font-size: 11px; color: rgba(255, 255, 255, 0.6);
+      cursor: pointer; border-left: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);
+      transition: all 0.2s ease; user-select: none;
+    }
+    .copy-badge:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+    .copy-badge.copied { background: rgba(34, 197, 94, 0.2); color: #4ade80; border-color: rgba(34, 197, 94, 0.3); }
+
+    /* PDF Generation Styles - Hides Header elements */
+    body.generating-pdf header { display: none !important; } 
+    body.generating-pdf #report-container { background-color: #1a1a2e !important; color: #ffffff !important; padding: 20px; }
+    body.generating-pdf .card { background-color: #27293d !important; border: 1px solid rgba(255,255,255,0.1) !important; box-shadow: none !important; color: #ffffff !important; }
+    body.generating-pdf pre { background-color: rgba(0,0,0,0.3) !important; color: #e2e8f0 !important; border: 1px solid #444 !important; }
+    body.generating-pdf .copy-badge { display: none !important; }
+    body.generating-pdf h2, body.generating-pdf h3 { color: #ffffff !important; }
+
+    /* Toast */
+    #copy-toast {
+      visibility: hidden; min-width: 200px; background-color: #333; color: #fff;
+      text-align: center; border-radius: 4px; padding: 12px; position: fixed;
+      z-index: 9999; left: 50%; bottom: 60px; transform: translateX(-50%);
+      font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    #copy-toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+    @keyframes fadein { from {bottom: 30px; opacity: 0;} to {bottom: 60px; opacity: 1;} }
+    @keyframes fadeout { from {bottom: 60px; opacity: 1;} to {bottom: 30px; opacity: 0;} }
+    
+    /* =========================================
+       ✅ MODAL CSS (Shared)
+       ========================================= */
+    footer {
+      position: fixed; bottom: 0; left: 0; width: 100%; height: 40px;
+      background: var(--card-bg); color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 600; z-index: 1000;
+      border-top: 1px solid var(--border-light);
+      cursor: pointer; transition: color 0.3s ease; user-select: none;
+    }
+    footer:hover { color: var(--primary); text-decoration: underline; }
+
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px);
+      z-index: 9999; justify-content: center; align-items: center;
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active { display: flex; opacity: 1; }
+
+    .modal-content {
+      background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 40px; border-radius: 20px; width: 90%; max-width: 900px;
+      position: relative; text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      transform: scale(0.95); transition: transform 0.3s ease;
+    }
+    .modal-overlay.active .modal-content { transform: scale(1); }
+
+    .modal-close {
+      position: absolute; top: 15px; right: 15px;
+      background: rgba(255,255,255,0.1); border: none; color: #fff;
+      font-size: 24px; width: 32px; height: 32px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;
+    }
+    .modal-close:hover { background: #ef4444; transform: rotate(90deg); }
+
+    .modal-content h2 { margin: 0 0 5px 0; color: var(--primary); font-size: 2rem; }
+    .team-subtitle { color: var(--text-muted); margin-bottom: 30px; font-size: 0.95rem; }
+
+    .team-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start; }
+    .team-card {
+      background: rgba(255,255,255,0.03); padding: 25px 15px;
+      border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s ease;
+    }
+    .team-card:hover { background: rgba(255,255,255,0.07); border-color: var(--primary); transform: translateY(-5px); }
+
+    .img-wrapper {
+      width: 110px; height: 110px; margin: 0 auto 15px;
+      border-radius: 50%; padding: 3px; border: 2px solid var(--primary); overflow: hidden;
+    }
+    .img-wrapper img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+    .team-card h3 { margin: 10px 0 5px; font-size: 1.1rem; color: #fff; }
+    .role { display: block; font-size: 0.8rem; color: var(--primary); margin-bottom: 15px; font-weight: 700; text-transform: uppercase; }
+
+    .social-links { display: flex; justify-content: center; gap: 10px; }
+    .social-icon {
+      color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.05);
+      border-radius: 8px; display: flex; transition: 0.2s;
+    }
+    .social-icon:hover { color: #fff; transform: translateY(-2px); }
+
+    @media (max-width: 768px) { .team-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+
+<body>
+  
+  <header>
+    <span class="header-logo">EchoMind</span>
+    
+    <div class="header-right">
+      <button class="btn-download" onclick="downloadPDF()">Download PDF ⬇</button>
+      <a href="/" class="header-back">
+        <span>← Back to Home</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h1>Result</h1>
+      </div>
+
+    <div id="copy-toast">Copied to clipboard!</div>
+
+    {% if error %}
+      <div class="card">
+        <div class="warn">ERROR: {{ error }}</div>
+      </div>
+    {% else %}
+
+      <div id="report-container">
+        <div class="card">
+          <h2>Phase-1: Transcription + Sentiment</h2>
+          <p><b>Language:</b> {{ result.phase1.language }}</p>
+          <p><b>Sentiment:</b> {{ result.phase1.sentiment }} (score={{ "%.2f"|format(result.phase1.sentiment_score) }})</p>
+          <h3>Transcript</h3>
+          <pre>{{ result.phase1.transcript }}</pre>
+          <h3>Explainable AI Output (Rule-based)</h3>
+          <pre>{{ result.phase1.explanation }}</pre>
+          <h3 style="margin-top:25px">SOCIAL & CULTURAL CONTEXT</h3>
+          {% if result.phase1.social_context_ok %}
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 15px 0">
+              <span style="font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-light);background:rgba(255,255,255,0.04)">
+                ✅ LLM: {{ result.phase1.social_context_model }}
+              </span>
+              {% if result.phase1.social_context_flags and result.phase1.social_context_flags.risk_level %}
+                <span style="font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-light);background:rgba(255,255,255,0.04)">
+                  Risk: {{ result.phase1.social_context_flags.risk_level }}
+                </span>
+              {% endif %}
+            </div>
+            <pre>{{ result.phase1.social_context_explanation }}</pre>
+          {% else %}
+            <div class="warn" style="margin-top:8px">LLM Social Context is unavailable (fallback mode)</div>
+            <pre>{{ result.phase1.social_context_explanation }}</pre>
+          {% endif %}
+        </div>
+
+        <div class="card">
+          <h2>Phase-2: Motion & Visual Feature Analysis</h2>
+          <p><b>Timeline CSV:</b> {{ result.phase2.timeline_csv_path }}</p>
+          <p><b>Timeline JSON:</b> {{ result.phase2.timeline_json_path }}</p>
+
+          <h3>Stats Breakdown (Averages)</h3>
+          <canvas id="avgChart" width="900" height="300"
+            style="width:100%;max-width:1000px;border-radius:14px;border:1px solid var(--border-light);background:rgba(0,0,0,0.20)"></canvas>
+
+          <h3 style="margin-top:25px">Stats Breakdown (Variability)</h3>
+          <canvas id="varChart" width="900" height="300"
+            style="width:100%;max-width:1000px;border-radius:14px;border:1px solid var(--border-light);background:rgba(0,0,0,0.20)"></canvas>
+
+          <h3 style="margin-top:25px">AI COACH FEEDBACK (OFFLINE LLM)</h3>
+          {% if result.phase2.coach_ok %}
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 15px 0">
+              <span style="font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-light);background:rgba(255,255,255,0.04)">
+                ✅ LLM: {{ result.phase2.coach_model }}
+              </span>
+            </div>
+            <pre>{{ result.phase2.coach_feedback }}</pre>
+          {% else %}
+            <div class="warn" style="margin-top:8px">LLM Coach is unavailable (fallback mode)</div>
+            <pre>{{ result.phase2.coach_feedback }}</pre>
+          {% endif %}
+        </div>
+      </div>
+
+      <script id="phase2-stats" type="application/json">
+        {{ (result.phase2.stats | tojson) if (result and result.phase2 and result.phase2.stats) else "{}" }}
+      </script>
+
+    {% endif %}
+
+    <footer id="footer-trigger">
+      Developed by: Team-EchoMind
+    </footer>
+  </div>
+
+
+  <div id="dev-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close" id="close-btn">×</button>
+      <h2>Meet the Team</h2>
+      <p class="team-subtitle">The minds behind EchoMind</p>
+      <div class="team-grid">
+        <div class="team-card">
+          <div class="img-wrapper">
+            <img src="/static/images/member1.jpg" alt="Member 1" onerror="this.src='https://via.placeholder.com/100?text=IMG'">
+          </div>
+          <h3>Rakib Biswash</h3>
+          <span class="role">Software Engineer</span>
+          <div class="social-links">
+            <a href="https://github.com/banrayndox" target="_blank" class="social-icon github"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            <a href="https://linkedin.com/in/banrayndox" target="_blank" class="social-icon linkedin"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg></a>
+          </div>
+        </div>
+        <div class="team-card">
+          <div class="img-wrapper">
+            <img src="/static/images/member2.jpg" alt="Member 2" onerror="this.src='https://via.placeholder.com/100?text=IMG'">
+          </div>
+          <h3>Alfi Shahrin Talukder</h3>
+          <span class="role">AI Engineer</span>
+          <div class="social-links">
+            <a href="https://github.com/Alfi-svg" target="_blank" class="social-icon github"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            <a href="https://www.linkedin.com/in/alfi-shahrin-talukder-a68450370/" target="_blank" class="social-icon linkedin"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg></a>
+          </div>
+        </div>
+        <div class="team-card">
+          <div class="img-wrapper">
+            <img src="/static/images/member3.jpg" alt="Member 3" onerror="this.src='https://via.placeholder.com/100?text=IMG'">
+          </div>
+          <h3>Samiul Islam</h3>
+          <span class="role">ML Engineer</span>
+          <div class="social-links">
+            <a href="https://github.com/" target="_blank" class="social-icon github"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a>
+            <a href="https://www.linkedin.com/in/samiul-islam2/" target="_blank" class="social-icon linkedin"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // PDF Logic
+      window.downloadPDF = function() {
+        const element = document.getElementById('report-container');
+        const opt = {
+          margin:       [0.3, 0.3, 0.3, 0.3],
+          filename:     'AI_Analysis_Report.pdf',
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true, logging: false }, 
+          jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        document.body.classList.add('generating-pdf');
+        setTimeout(() => {
+            html2pdf().set(opt).from(element).save().then(() => {
+              document.body.classList.remove('generating-pdf');
+            });
+        }, 100);
+      };
+
+      // Copy Badge Logic
+      const preBlocks = document.querySelectorAll('pre');
+      preBlocks.forEach(pre => {
+        const badge = document.createElement('div');
+        badge.className = 'copy-badge';
+        badge.innerText = 'Copy';
+        badge.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const clone = pre.cloneNode(true);
+          const badgeInClone = clone.querySelector('.copy-badge');
+          if (badgeInClone) badgeInClone.remove();
+          const textToCopy = clone.innerText.trim();
+          try {
+            await navigator.clipboard.writeText(textToCopy);
+            badge.innerText = 'Copied!';
+            badge.classList.add('copied');
+            setTimeout(() => {
+              badge.innerText = 'Copy';
+              badge.classList.remove('copied');
+            }, 2000);
+          } catch (err) { console.error('Failed to copy', err); }
+        });
+        pre.appendChild(badge);
+      });
+
+      // ✅ MODAL LOGIC
+      const modal = document.getElementById('dev-modal');
+      const footerTrigger = document.getElementById('footer-trigger');
+      const closeBtn = document.getElementById('close-btn');
+
+      // OPEN
+      if(footerTrigger && modal) {
+        footerTrigger.addEventListener('click', () => {
+          modal.classList.add('active');
+        });
+      }
+
+      // CLOSE
+      function hideModal() {
+        if(modal) modal.classList.remove('active');
+      }
+
+      if(closeBtn) closeBtn.addEventListener('click', hideModal);
+
+      if(modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) hideModal();
+        });
+      }
+    });
+
+    // Charts Logic
+    function getStats() {
+      try {
+        const el = document.getElementById("phase2-stats");
+        return el ? JSON.parse(el.textContent || "{}") : {};
+      } catch (e) { return {}; }
+    }
+
+    const colorMap = {
+      "posture_openness": "rgba(124,92,255,0.95)",
+      "hand_gesture_activity": "rgba(34,197,94,0.95)",
+      "eye_contact_approx": "rgba(251,191,36,0.95)",
+      "movement_pacing": "rgba(239,68,68,0.95)"
+    };
+    const defaultColors = ["#3b82f6", "#ec4899", "#8b5cf6", "#6366f1"];
+
+    function drawPie(canvasId, title, values) {
+      const c = document.getElementById(canvasId);
+      if (!c) return;
+      const ctx = c.getContext("2d");
+      const W = c.width, H = c.height;
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.font = "bold 16px system-ui";
+      ctx.fillText(title, 14, 24);
+
+      const keys = Object.keys(values || {});
+      let total = 0;
+      keys.forEach(k => { total += (values[k] || 0); });
+
+      if (total === 0) {
+        ctx.fillStyle = "rgba(255,255,255,0.5)";
+        ctx.font = "14px system-ui";
+        ctx.fillText("No data available", 14, 50);
+        return;
+      }
+
+      const radius = Math.min(W / 3, (H - 60) / 2);
+      const cx = W / 3; 
+      const cy = (H / 2) + 10;
+      let startAngle = 0;
+
+      keys.forEach((k, i) => {
+        const val = values[k] || 0;
+        const sliceAngle = (val / total) * 2 * Math.PI;
+        const endAngle = startAngle + sliceAngle;
+        const color = colorMap[k] || defaultColors[i % defaultColors.length];
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.3)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        startAngle = endAngle;
+      });
+
+      let lx = (W / 3) * 2 - 20;
+      let ly = cy - (keys.length * 15); 
+      
+      ctx.font = "13px system-ui";
+      keys.forEach((k, i) => {
+        const val = values[k] || 0;
+        const pct = ((val / total) * 100).toFixed(1) + "%";
+        const color = colorMap[k] || defaultColors[i % defaultColors.length];
+        const label = k.replace(/_/g, " ");
+
+        ctx.fillStyle = color;
+        ctx.fillRect(lx, ly, 14, 14);
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.fillText(`${label} (${pct})`, lx + 24, ly + 12);
+        ly += 30;
+      });
+    }
+
+    (function () {
+      const stats = getStats();
+      drawPie("avgChart", "Distribution of Average Features", stats.averages || {});
+      drawPie("varChart", "Distribution of Variability", stats.variability || {});
+    })();
+  </script>
+
+</body>
+</html>
